@@ -42,8 +42,12 @@ targets:
     # info.path intentionally omitted — we manage Info.plist manually
     # so XcodeGen never regenerates or overwrites it.
 
+    # entitlements.properties causes XcodeGen to write the file with correct content
     entitlements:
       path: Sources/Oldies/Resources/Oldies.entitlements
+      properties:
+        com.apple.developer.associated-domains:
+          - applinks:hagstroem.net
 
     dependencies:
       # Meta Wearables Device Access Toolkit
