@@ -38,10 +38,9 @@ targets:
 
     resources:
       - Sources/Oldies/Resources/Assets.xcassets
-      - Sources/Oldies/Resources/Info.plist
 
-    info:
-      path: Sources/Oldies/Resources/Info.plist
+    # info.path intentionally omitted — we manage Info.plist manually
+    # so XcodeGen never regenerates or overwrites it.
 
     entitlements:
       path: Sources/Oldies/Resources/Oldies.entitlements
