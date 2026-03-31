@@ -14,8 +14,8 @@ options:
 settings:
   base:
     PRODUCT_NAME: Oldies
-    PRODUCT_BUNDLE_IDENTIFIER: com.hagstrom.oldiesapp
-    DEVELOPMENT_TEAM: 3M9876JE88
+    PRODUCT_BUNDLE_IDENTIFIER: com.hagstrom.oldies
+    DEVELOPMENT_TEAM: WU26G28D5P
     SWIFT_VERSION: "5.10"
     MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
@@ -55,8 +55,8 @@ targets:
 
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.hagstrom.oldiesapp
-        DEVELOPMENT_TEAM: 3M9876JE88
+        PRODUCT_BUNDLE_IDENTIFIER: com.hagstrom.oldies
+        DEVELOPMENT_TEAM: WU26G28D5P
         CODE_SIGN_ENTITLEMENTS: Sources/Oldies/Resources/Oldies.entitlements
         INFOPLIST_FILE: Sources/Oldies/Resources/Info.plist
 
