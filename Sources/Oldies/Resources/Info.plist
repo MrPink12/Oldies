@@ -38,11 +38,11 @@
 	<key>MWDAT</key>
 	<dict>
 		<key>AppLinkURLScheme</key>
-		<string>oldies</string>
+		<string>https://hagstroem.net/oldies</string>
 		<key>MetaAppID</key>
 		<string>1958523175039520</string>
 		<key>ClientToken</key>
-		<string>ARI1958523175039520|4fdd23f7b0a6ec095ba522e9d4d0c3e2</string>
+		<string>AR|1958523175039520|4fdd23f7b0a6ec095ba522e9d4d0c3e2</string>
 		<key>TeamID</key>
 		<string>WU26G28D5P</string>
 	</dict>
