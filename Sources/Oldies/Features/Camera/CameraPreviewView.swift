@@ -30,7 +30,7 @@ struct CameraPreviewView: View {
                     Text("Ingen kameraström")
                         .font(.title3)
                         .foregroundStyle(.white.opacity(0.6))
-                    if glasses.connectedDevice != nil && glasses.streamState != .streaming {
+                    if glasses.connectedDeviceId != nil && glasses.streamState != .streaming {
                         Button {
                             Task { await glasses.startStream() }
                         } label: {

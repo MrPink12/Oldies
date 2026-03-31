@@ -14,8 +14,8 @@ options:
 settings:
   base:
     PRODUCT_NAME: Oldies
-    PRODUCT_BUNDLE_IDENTIFIER: com.hagstrom.oldies
-    DEVELOPMENT_TEAM: WU26G28D5P
+    PRODUCT_BUNDLE_IDENTIFIER: com.hagstrom.oldiesapp
+    DEVELOPMENT_TEAM: 3M9876JE88
     SWIFT_VERSION: "5.10"
     MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
@@ -45,28 +45,22 @@ targets:
     # entitlements.properties causes XcodeGen to write the file with correct content
     entitlements:
       path: Sources/Oldies/Resources/Oldies.entitlements
-      properties:
-        com.apple.developer.associated-domains:
-          - applinks:hagstroem.net
 
     dependencies:
-      # Meta Wearables Device Access Toolkit
-      - package: MWDATCore
-      - package: MWDATCamera
+      # Meta Wearables Device Access Toolkit v0.5.0
+      - package: MetaWearablesDAT
+        product: MWDATCore
+      - package: MetaWearablesDAT
+        product: MWDATCamera
 
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.hagstrom.oldies
-        DEVELOPMENT_TEAM: WU26G28D5P
+        PRODUCT_BUNDLE_IDENTIFIER: com.hagstrom.oldiesapp
+        DEVELOPMENT_TEAM: 3M9876JE88
         CODE_SIGN_ENTITLEMENTS: Sources/Oldies/Resources/Oldies.entitlements
         INFOPLIST_FILE: Sources/Oldies/Resources/Info.plist
 
 packages:
-  MWDATCore:
+  MetaWearablesDAT:
     url: https://github.com/facebook/meta-wearables-dat-ios
-    from: "1.0.0"
-    product: MWDATCore
-  MWDATCamera:
-    url: https://github.com/facebook/meta-wearables-dat-ios
-    from: "1.0.0"
-    product: MWDATCamera
+    exactVersion: "0.5.0"

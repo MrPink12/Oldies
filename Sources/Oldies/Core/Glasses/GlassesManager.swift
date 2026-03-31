@@ -1,41 +1,34 @@
 // GlassesManager.swift
 // Oldies
 //
-// Central manager for the Meta Ray-Ban glasses connection.
 // Wraps the Meta Wearables Device Access Toolkit (MWDATCore + MWDATCamera).
-//
-// Lifecycle:
-//   1. App launches → OldiesApp calls Wearables.configure()
-//   2. User taps "Connect" → startRegistration() opens Meta AI app
-//   3. Meta AI app redirects back via Universal Link / URL scheme
-//   4. OldiesApp.onOpenURL → Wearables.shared.handleUrl(url)
-//   5. Registration resolves → devicesStream emits connected device
-//   6. GlassesManager starts StreamSession for camera feed
+// Uses the real v0.5.0 API surface derived from the compiled swiftinterface.
 
 import Foundation
 import SwiftUI
 import MWDATCore
 import MWDATCamera
 
-/// Observable singleton – inject via @EnvironmentObject in SwiftUI views.
+/// Observable singleton - inject via @EnvironmentObject in SwiftUI views.
 @MainActor
 final class GlassesManager: ObservableObject {
 
     static let shared = GlassesManager()
 
-    // MARK: – Published state
-    @Published var registrationState: RegistrationState = .unregistered
-    @Published var connectedDevice: WearableDevice?
-    @Published var cameraPermission: PermissionStatus = .denied
+    // MARK: - Published state
+    @Published var registrationState: RegistrationState = .unavailable
+    @Published var connectedDeviceId: String?
+    @Published var cameraPermission: PermissionStatus?
     @Published var streamState: StreamSessionState = .stopped
     @Published var latestFrame: UIImage?
     @Published var latestPhoto: Data?
     @Published var error: String?
 
-    // MARK: – Private
+    // MARK: - Private
     private var streamSession: StreamSession?
-    private var frameToken: Any?
-    private var photoToken: Any?
+    private var frameToken: (any AnyListenerToken)?
+    private var photoToken: (any AnyListenerToken)?
+    private var stateToken: (any AnyListenerToken)?
     private var registrationTask: Task<Void, Never>?
     private var devicesTask: Task<Void, Never>?
 
@@ -44,13 +37,12 @@ final class GlassesManager: ObservableObject {
         observeDevices()
     }
 
-    // MARK: – Registration
+    // MARK: - Registration
 
-    /// Opens Meta AI app to request glasses access.
     func startRegistration() {
         Task {
             do {
-                try Wearables.shared.startRegistration()
+                try await Wearables.shared.startRegistration()
             } catch {
                 self.error = "Registration failed: \(error.localizedDescription)"
             }
@@ -60,31 +52,33 @@ final class GlassesManager: ObservableObject {
     func stopRegistration() {
         Task {
             do {
-                try Wearables.shared.startUnregistration()
+                try await Wearables.shared.startUnregistration()
             } catch {
                 self.error = "Unregistration failed: \(error.localizedDescription)"
             }
         }
     }
 
-    // MARK: – Camera permissions
+    // MARK: - Camera permissions
 
     func checkAndRequestCameraPermission() async {
         let wearables = Wearables.shared
         do {
-            cameraPermission = try await wearables.checkPermissionStatus(.camera)
-            if cameraPermission != .granted {
-                cameraPermission = try await wearables.requestPermission(.camera)
+            let status = try await wearables.checkPermissionStatus(.camera)
+            cameraPermission = status
+            if status != .granted {
+                let newStatus = try await wearables.requestPermission(.camera)
+                cameraPermission = newStatus
             }
         } catch {
             self.error = "Camera permission error: \(error.localizedDescription)"
         }
     }
 
-    // MARK: – Camera stream
+    // MARK: - Camera stream
 
     func startStream() async {
-        guard let device = connectedDevice else {
+        guard let deviceId = connectedDeviceId else {
             error = "No device connected"
             return
         }
@@ -93,73 +87,55 @@ final class GlassesManager: ObservableObject {
             error = "Camera permission not granted"
             return
         }
-
-        let wearables = Wearables.shared
-        let selector = SpecificDeviceSelector(deviceId: device.id)
-        // 15 fps, medium resolution (504×896) – good balance for AI analysis
-        let config = StreamSessionConfig(frameRate: 15, resolution: .medium)
-        let session = StreamSession(wearables: wearables, deviceSelector: selector, config: config)
+        let selector = SpecificDeviceSelector(device: deviceId)
+        let config = StreamSessionConfig(videoCodec: .hvc1, resolution: .medium, frameRate: 15)
+        let session = StreamSession(streamSessionConfig: config, deviceSelector: selector)
         self.streamSession = session
-
-        // Video frames
         frameToken = session.videoFramePublisher.listen { [weak self] frame in
             guard let image = frame.makeUIImage() else { return }
-            Task { @MainActor [weak self] in
-                self?.latestFrame = image
-            }
+            Task { @MainActor [weak self] in self?.latestFrame = image }
         }
-
-        // Photo data (for AI analysis)
         photoToken = session.photoDataPublisher.listen { [weak self] photoData in
-            Task { @MainActor [weak self] in
-                self?.latestPhoto = photoData.data
-            }
+            Task { @MainActor [weak self] in self?.latestPhoto = photoData.data }
         }
-
-        // Stream state
-        Task { [weak self] in
-            for await state in await session.stateStream() {
-                await MainActor.run { self?.streamState = state }
-            }
+        stateToken = session.statePublisher.listen { [weak self] state in
+            Task { @MainActor [weak self] in self?.streamState = state }
         }
-
         await session.start()
     }
 
     func stopStream() {
         Task {
             await streamSession?.stop()
+            await frameToken?.cancel()
+            await photoToken?.cancel()
+            await stateToken?.cancel()
             streamSession = nil
             frameToken = nil
             photoToken = nil
+            stateToken = nil
         }
     }
 
-    /// Triggers a JPEG photo capture from the glasses camera.
-    func capturePhoto() {
-        streamSession?.capturePhoto(format: .jpeg)
+    @discardableResult
+    func capturePhoto() -> Bool {
+        return streamSession?.capturePhoto(format: .jpeg) ?? false
     }
 
-    // MARK: – Private observers
+    // MARK: - Private observers
 
     private func observeRegistrationState() {
         registrationTask = Task { [weak self] in
-            let wearables = Wearables.shared
-            for await state in wearables.registrationStateStream() {
-                await MainActor.run {
-                    self?.registrationState = state
-                }
+            for await state in Wearables.shared.registrationStateStream() {
+                await MainActor.run { self?.registrationState = state }
             }
         }
     }
 
     private func observeDevices() {
         devicesTask = Task { [weak self] in
-            let wearables = Wearables.shared
-            for await devices in wearables.devicesStream() {
-                await MainActor.run {
-                    self?.connectedDevice = devices.first
-                }
+            for await devices in Wearables.shared.devicesStream() {
+                await MainActor.run { self?.connectedDeviceId = devices.first }
             }
         }
     }

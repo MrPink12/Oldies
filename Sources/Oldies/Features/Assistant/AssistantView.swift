@@ -21,7 +21,7 @@ struct AssistantView: View {
                         LazyVStack(alignment: .leading, spacing: 12) {
                             ForEach(vm.messages) { msg in
                                 MessageBubble(message: msg)
-                                    .id(msg.id)
+                                    .id(msg.id.uuidString)
                             }
 
                             if vm.isThinking {
@@ -33,7 +33,7 @@ struct AssistantView: View {
                     }
                     .onChange(of: vm.messages.count) { _ in
                         withAnimation {
-                            proxy.scrollTo(vm.messages.last?.id ?? "thinking", anchor: .bottom)
+                            proxy.scrollTo(vm.messages.last?.id.uuidString ?? "thinking", anchor: .bottom)
                         }
                     }
                 }
@@ -196,7 +196,7 @@ struct ConnectionStatusButton: View {
 
     var body: some View {
         Button {
-            if glasses.registrationState == .unregistered {
+            if glasses.registrationState != .registered {
                 glasses.startRegistration()
             }
         } label: {
@@ -212,14 +212,14 @@ struct ConnectionStatusButton: View {
 
     private var statusColor: Color {
         switch glasses.registrationState {
-        case .registered:   return glasses.connectedDevice != nil ? .green : .yellow
+        case .registered:   return glasses.connectedDeviceId != nil ? .green : .yellow
         default:             return .red
         }
     }
 
     private var statusLabel: String {
         switch glasses.registrationState {
-        case .registered:   return glasses.connectedDevice != nil ? "Ansluten" : "Väntar på glasögon"
+        case .registered:   return glasses.connectedDeviceId != nil ? "Ansluten" : "Väntar på glasögon"
         default:             return "Anslut"
         }
     }

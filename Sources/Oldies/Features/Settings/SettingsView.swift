@@ -20,8 +20,8 @@ struct SettingsView: View {
             // ─── Glasses connection ──────────────────────────────────────
             Section("Glasögon") {
                 ConnectionRow()
-                if let device = glasses.connectedDevice {
-                    LabeledContent("Enhet", value: device.name ?? "Okänd")
+                if let device = glasses.connectedDeviceId {
+                    LabeledContent("Enhet", value: device)
                 }
                 CameraStreamRow()
             }
@@ -174,7 +174,7 @@ struct CameraStreamRow: View {
                     Task { await glasses.startStream() }
                 }
                 .foregroundStyle(.blue)
-                .disabled(glasses.connectedDevice == nil)
+                .disabled(glasses.connectedDeviceId == nil)
             }
         }
     }
